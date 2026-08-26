@@ -36,7 +36,7 @@
     .dish-name { font-weight: 700; font-size: 14px; line-height: 1.25; }
     .dish-desc { color: var(--muted); font-size: 12px; line-height: 1.4; margin-top: 2px; }
 
-    /* Quantity stepper */
+    /* Quantity stepper (menu grid) */
     .stepper { display: flex; align-items: center; margin-top: auto; gap: 8px; }
     .qty { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
     .qty button {
@@ -54,10 +54,10 @@
     .ticket-line {
         display: flex; align-items: flex-start; gap: 10px; padding: 12px 8px; margin: 0 -8px;
         border-top: 1px solid var(--border); border-radius: 10px;
+        overflow: hidden; /* required so the height-collapse removal animation doesn't clip abruptly */
     }
     .ticket-line:first-child { border-top: 0; }
 
-    /* Quantity stepper (Current Order) */
     .qty-stepper {
         flex-shrink: 0; width: 34px; display: flex; flex-direction: column; align-items: stretch;
         border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: #fff;
@@ -88,6 +88,26 @@
         border-radius: 8px; line-height: 1; font-size: 15px;
     }
     .btn-icon:hover { background: rgba(179, 69, 46, .1); }
+
+    /* --- Two-panel layout: CSS grid, so overflowing content inside a panel
+       (e.g. the horizontally-scrolling dish grid) can never push the column
+       widths around the way it can with flex-basis percentages. --- */
+    .order-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
+        align-items: start;
+        gap: 1.5rem;
+        width: 100%;
+    }
+    .order-layout .panel-menu,
+    .order-layout .panel-ticket {
+        min-width: 0; /* required so grid children don't grow to fit their content */
+        width: 100%;
+    }
+    /* Stack on narrow screens so the menu grid doesn't get crushed */
+    @media (max-width: 767.98px) {
+        .order-layout { grid-template-columns: 1fr; }
+    }
 </style>
 @endsection
 
@@ -112,8 +132,8 @@
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-lg-7">
+<div class="order-layout">
+    <div class="panel-menu">
         @php($menuEditable = in_array($order->status, ['open', 'sent_to_kitchen']))
         @if($menuEditable)
             <div class="card shadow-sm">
@@ -189,7 +209,7 @@
         @endif
     </div>
 
-    <div class="col-lg-5">
+    <div class="panel-ticket">
         <div class="card shadow-sm" style="position: sticky; top: 20px;">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Current Order</span>
@@ -269,6 +289,7 @@
 @endsection
 
 @section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
 <script>
 (function () {
     const ticketBody = document.getElementById('order-ticket-body');
@@ -295,10 +316,28 @@
             count += qty;
             const qtyEl = line.querySelector('[data-role="qty"]');
             const subEl = line.querySelector('[data-role="subtotal"]');
-            if (qtyEl) qtyEl.textContent = qty;
-            if (subEl) subEl.textContent = money(qty * price);
+            if (qtyEl) {
+                qtyEl.textContent = qty;
+                anime({ targets: qtyEl, scale: [1.3, 1], duration: 200, easing: 'easeOutQuad' });
+            }
+            if (subEl) {
+                subEl.textContent = money(qty * price);
+                anime({ targets: subEl, scale: [1.15, 1], duration: 200, easing: 'easeOutQuad' });
+            }
         });
-        if (totalEl) totalEl.textContent = money(total);
+
+        if (totalEl) {
+            const from = parseFloat(totalEl.dataset.raw || totalEl.textContent.replace('$', '')) || 0;
+            totalEl.dataset.raw = total;
+            anime({
+                targets: { val: from },
+                val: total,
+                duration: 350,
+                easing: 'easeOutQuad',
+                round: 100,
+                update: (a) => { totalEl.textContent = money(a.animations[0].currentValue); }
+            });
+        }
         if (countEl) countEl.textContent = count + ' item' + (count === 1 ? '' : 's');
         if (sendBtn) sendBtn.disabled = ticketBody.querySelectorAll('.ticket-line').length === 0;
     }
@@ -342,9 +381,21 @@
                 line.innerHTML = match.innerHTML;
             });
 
-            // Brand-new lines (added from the menu grid) get appended at the end, in order.
+            // Brand-new lines (added from the menu grid) get appended at the end, in order,
+            // sliding + fading in so they don't just pop into place.
             freshLines.forEach((fl) => {
-                if (!consumed.has(fl)) ticketBody.appendChild(fl.cloneNode(true));
+                if (!consumed.has(fl)) {
+                    const clone = fl.cloneNode(true);
+                    clone.style.opacity = 0;
+                    ticketBody.appendChild(clone);
+                    anime({
+                        targets: clone,
+                        opacity: [0, 1],
+                        translateX: [16, 0],
+                        duration: 320,
+                        easing: 'easeOutQuad'
+                    });
+                }
             });
 
             // Refresh the "no items" placeholder / TOTAL footer (non-line children), kept last.
@@ -371,7 +422,17 @@
 
         if (qty <= 0) {
             line.dataset.qty = 0;
-            line.remove();
+            anime({
+                targets: line,
+                opacity: [1, 0],
+                translateX: [0, -16],
+                height: [line.offsetHeight, 0],
+                paddingTop: 0,
+                paddingBottom: 0,
+                duration: 260,
+                easing: 'easeInQuad',
+                complete: () => line.remove()
+            });
             recalcLocal();
             await request(REMOVE_URL(itemId), new URLSearchParams({ _method: 'DELETE' }));
             await syncTicket();
@@ -391,6 +452,12 @@
             const form = e.target.closest('form.dish');
             if (!form) return;
             e.preventDefault();
+            anime({
+                targets: form,
+                scale: [1, 1.04, 1],
+                duration: 260,
+                easing: 'easeOutQuad'
+            });
             const btn = form.querySelector('button[type="submit"]');
             if (btn) btn.disabled = true;
             await request(form.action, new FormData(form));
