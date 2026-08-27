@@ -51,7 +51,7 @@ class MenuItemController extends Controller
         $data['is_available'] = true;
 
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('menu-items', 'public');
+            $imagePath = $request->file('image')->store('', 'supabase');
             $data['image'] = $imagePath;
         }
 
