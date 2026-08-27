@@ -30,7 +30,7 @@ class MenuItemController extends Controller
         $data['is_available'] = true;
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('menu-items', 'public');
+            $data['image'] = $request->file('image')->store('', 'supabase');
         }
 
         $item = MenuItem::create($data);
@@ -88,7 +88,7 @@ class MenuItemController extends Controller
             'is_available' => (bool) $item->is_available,
             'category_id' => $item->category_id,
             'category_name' => $item->category?->name,
-            'image' => $item->image ? asset('storage/' . $item->image) : null,
+            'image' => $item->image ? Storage::disk('supabase')->url($item->image) : null,
         ];
     }
         public function categories()
