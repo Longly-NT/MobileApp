@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MenuItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MenuItemController extends Controller
 {
@@ -53,7 +54,7 @@ class MenuItemController extends Controller
             if (! empty($menuItem->image)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($menuItem->image);
             }
-            $data['image'] = $request->file('image')->store('menu-items', 'public');
+            $data['image'] = $request->file('image')->store('', 'supabase');
         }
 
         $menuItem->update($data);

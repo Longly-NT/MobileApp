@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
-
+use Illuminate\Support\Facades\Storage;
 class MenuController extends Controller
 {
     public function index()
@@ -26,7 +26,7 @@ class MenuController extends Controller
                             'description' => $item->description,
                             'allergy_info' => $item->allergy_info,
                             'price' => (float) $item->price,
-                            'image' => $item->image ? asset('storage/'.$item->image) : null,
+                            'image' => $item->image ? Storage::disk('supabase')->url($item->image) : null,
                         ];
                     }),
                 ];
