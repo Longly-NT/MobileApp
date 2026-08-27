@@ -33,4 +33,12 @@ class MenuItem extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+    public function getImageUrlAttribute(): ?string
+    {
+        if (! $this->image) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('supabase')->url($this->image);
+    }
 }

@@ -159,7 +159,7 @@
                                             <input type="hidden" name="menu_item_id" value="{{ $menuItem->id }}">
                                             <div class="dish-media">
                                                 @if($menuItem->image)
-                                                    <img src="{{ asset('storage/' . $menuItem->image) }}" alt="{{ $menuItem->name }}">
+                  <img src="{{ $menuItem->image_url }}" alt="{{ $menuItem->name }}">
                                                 @else
                                                     <span class="noimg"><i class="bi bi-egg-fried" style="font-size:2rem;"></i></span>
                                                 @endif
