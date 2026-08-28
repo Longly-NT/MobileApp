@@ -9,17 +9,17 @@ class OrderController extends Controller
 {
     public function index()
     {
-        $pending = Order::with(['diningTable', 'items.menuItem'])
+        $pending = Order::with(['diningTable', 'items.menuItem.category'])
             ->where('status', 'sent_to_kitchen')
             ->oldest('sent_to_kitchen_at')
             ->get();
 
-        $active = Order::with(['diningTable', 'items.menuItem'])
+        $active = Order::with(['diningTable', 'items.menuItem.category'])
             ->whereIn('status', ['accepted', 'preparing'])
             ->oldest('accepted_at')
             ->get();
 
-        $finished = Order::with(['diningTable', 'items.menuItem'])
+        $finished = Order::with(['diningTable', 'items.menuItem.category'])
             ->where('status', 'finished')
             ->latest('finished_at')
             ->take(10)
@@ -65,7 +65,7 @@ class OrderController extends Controller
         return response()->json($this->formatOrder($order));
     }
 
-    private function formatOrder(Order $order): array
+     private function formatOrder(Order $order): array
     {
         return [
             'id' => $order->id,
@@ -74,6 +74,8 @@ class OrderController extends Controller
             'items' => $order->items->map(fn ($item) => [
                 'name' => $item->menuItem->name,
                 'quantity' => $item->quantity,
+                'station' => $item->menuItem->category?->station,
+                'allergy_info' => $item->menuItem->allergy_info,
             ]),
         ];
     }
