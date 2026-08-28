@@ -167,4 +167,27 @@ class OrderController extends Controller
 
         return $this->showOrder($order);
     }
+        public function updateItemQuantity(\Illuminate\Http\Request $request, Order $order, \App\Models\OrderItem $item)
+    {
+        $this->guardOpenForItems($order);
+
+        $data = $request->validate([
+            'quantity' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $item->update(['quantity' => $data['quantity']]);
+        $order->recalculateTotal();
+
+        return $this->showOrder($order);
+    }
+
+    public function removeItem(Order $order, \App\Models\OrderItem $item)
+    {
+        $this->guardOpenForItems($order);
+
+        $item->delete();
+        $order->recalculateTotal();
+
+        return $this->showOrder($order);
+    }
 }

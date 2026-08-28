@@ -43,4 +43,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/reports/daily', [ReportController::class, 'dailySummary']);
     Route::get('/admin/categories', [MenuItemController::class, 'categories']);
     Route::get('/admin/dashboard', [DashboardController::class, 'index']);
+    Route::patch('/orders/{order}/items/{item}', [OrderController::class, 'updateItemQuantity']);
+    Route::delete('/orders/{order}/items/{item}', [OrderController::class, 'removeItem']);
 });
