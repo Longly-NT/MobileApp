@@ -15,7 +15,7 @@ class MenuItemController extends Controller
 
         return response()->json($items->map(fn($item) => $this->format($item)));
     }
-    
+
 
     public function store(Request $request)
     {
@@ -26,6 +26,7 @@ class MenuItemController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:10240'],
+            'allergy_info' => ['nullable', 'string', 'max:255'],
         ]);
 
         $data['is_available'] = true;
@@ -39,7 +40,7 @@ class MenuItemController extends Controller
         return response()->json($this->format($item), 201);
     }
 
-     public function update(Request $request, MenuItem $menuItem)
+    public function update(Request $request, MenuItem $menuItem)
     {
         abort_unless($request->user()->role === 'admin', 403, 'Only Admin can edit menu items.');
 
@@ -48,6 +49,7 @@ class MenuItemController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:10240'],
+            'allergy_info' => ['nullable', 'string', 'max:255'],
         ]);
 
         if ($request->hasFile('image')) {
@@ -90,9 +92,10 @@ class MenuItemController extends Controller
             'category_id' => $item->category_id,
             'category_name' => $item->category?->name,
             'image' => $item->image ? Storage::disk('supabase')->url($item->image) : null,
+            'allergy_info' => $item->allergy_info,
         ];
     }
-        public function categories()
+    public function categories()
     {
         $categories = \App\Models\Category::orderBy('name')->get(['id', 'name']);
 
