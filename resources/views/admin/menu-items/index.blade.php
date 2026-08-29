@@ -25,7 +25,7 @@
         }
 
         /* Rows/cards start hidden so the anime.js entrance timeline reveals them —
-               avoids a flash of unanimated content if the script is slow to run. */
+                   avoids a flash of unanimated content if the script is slow to run. */
         .js-anim-init {
             opacity: 0;
         }
@@ -363,13 +363,19 @@
             document.querySelectorAll('.modal').forEach((modalEl) => {
                 modalEl.addEventListener('show.bs.modal', () => {
                     const content = modalEl.querySelector('.modal-content');
-                    anime({
-                        targets: content,
-                        opacity: [0, 1],
-                        scale: [0.94, 1],
-                        duration: 260,
-                        easing: 'easeOutQuad',
-                    });
+                    try {
+                        anime({
+                            targets: content,
+                            opacity: [0, 1],
+                            scale: [0.94, 1],
+                            duration: 260,
+                            easing: 'easeOutQuad',
+                        });
+                    } catch (err) {
+                        // If the animation fails for any reason, just show the modal normally.
+                        content.style.opacity = 1;
+                        content.style.transform = 'scale(1)';
+                    }
                 });
             });
         })();
